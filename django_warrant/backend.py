@@ -3,10 +3,11 @@ import abc
 
 from boto3.exceptions import Boto3Error
 from botocore.exceptions import ClientError
+from django import VERSION as DJANGO_VERSION
 from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth import get_user_model
-from django.utils.six import iteritems
+# from django.utils.six import iteritems
 
 from warrant import Cognito
 from .utils import cognito_to_dict
@@ -22,7 +23,7 @@ class CognitoUser(Cognito):
                                        'family_name': 'last_name',
                                    }
                                    )
-
+    
     def get_user_obj(self,username=None,attribute_list=[],metadata={},attr_map={}):
         user_attrs = cognito_to_dict(attribute_list,CognitoUser.COGNITO_ATTR_MAPPING)
         django_fields = [f.name for f in CognitoUser.user_class._meta.get_fields()]
@@ -30,14 +31,14 @@ class CognitoUser(Cognito):
         for k, v in user_attrs.items():
             if k not in django_fields:
                 extra_attrs.update({k: user_attrs.pop(k, None)})
-        if getattr(settings, 'COGNITO_CREATE_UNKNOWN_USERS', True):
+        if getattr(settings, 'CREATE_UNKNOWN_USERS', True):
             user, created = CognitoUser.user_class.objects.update_or_create(
                 username=username,
                 defaults=user_attrs)
         else:
             try:
                 user = CognitoUser.user_class.objects.get(username=username)
-                for k, v in iteritems(user_attrs):
+                for k, v in user_attrs.iteritems:
                     setattr(user, k, v)
                 user.save()
             except CognitoUser.user_class.DoesNotExist:
@@ -70,6 +71,7 @@ class AbstractCognitoBackend(ModelBackend):
             settings.COGNITO_APP_ID,
             access_key=getattr(settings, 'AWS_ACCESS_KEY_ID', None),
             secret_key=getattr(settings, 'AWS_SECRET_ACCESS_KEY', None),
+            user_pool_region=settings.COGNITO_USER_POOL,
             username=username)
         try:
             cognito_user.authenticate(password)
@@ -91,7 +93,6 @@ class AbstractCognitoBackend(ModelBackend):
             ]:
             return None
         raise error
-
 
 class CognitoBackend(AbstractCognitoBackend):
     def authenticate(self, request, username=None, password=None):
