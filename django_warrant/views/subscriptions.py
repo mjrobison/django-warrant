@@ -4,10 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, \
     UserPassesTestMixin
 from django.http import Http404
-try:
-    from django.urls import reverse_lazy
-except ImportError:
-    from django.core.urlresolvers import reverse_lazy
+from django.urls import reverse_lazy
 from django.views.generic import FormView
 from django.views.generic.list import MultipleObjectMixin, ListView
 
@@ -59,8 +56,7 @@ class AdminSubscriptions(UserPassesTestMixin,GetCognitoUserMixin,
     form_class = APIKeySubscriptionForm
 
     def get_success_url(self):
-        return reverse_lazy('dw:admin-cognito-user',
-                            args=[self.kwargs.get('username')])
+        return reverse_lazy('admin-cognito-user',args=[self.kwargs.get('username')])
 
     def test_func(self):
         return self.request.user.has_perm('can_edit')

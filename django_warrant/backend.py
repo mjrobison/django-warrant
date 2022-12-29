@@ -25,7 +25,10 @@ class CognitoUser(Cognito):
                                    )
     
     def get_user_obj(self,username=None,attribute_list=[],metadata={},attr_map={}):
+        print([f.name for f in CognitoUser.user_class._meta.get_fields()])
+        
         user_attrs = cognito_to_dict(attribute_list,CognitoUser.COGNITO_ATTR_MAPPING)
+        print(user_attrs)
         django_fields = [f.name for f in CognitoUser.user_class._meta.get_fields()]
         extra_attrs = {}
         for k, v in user_attrs.items():
@@ -39,6 +42,7 @@ class CognitoUser(Cognito):
             try:
                 user = CognitoUser.user_class.objects.get(username=username)
                 for k, v in user_attrs.iteritems:
+                    print(k,v)
                     setattr(user, k, v)
                 user.save()
             except CognitoUser.user_class.DoesNotExist:
@@ -66,6 +70,7 @@ class AbstractCognitoBackend(ModelBackend):
         :param password: Cognito password
         :return: returns User instance of AUTH_USER_MODEL or None
         """
+        # print(type(getattr(settings, 'COGNITO_USER_POOL', 'us-east-1')))
         cognito_user = CognitoUser(
             settings.COGNITO_USER_POOL_ID,
             settings.COGNITO_APP_ID,
@@ -94,6 +99,8 @@ class AbstractCognitoBackend(ModelBackend):
             return None
         raise error
 
+
+# if DJANGO_VERSION[1] > 10:
 class CognitoBackend(AbstractCognitoBackend):
     def authenticate(self, request, username=None, password=None):
         """
@@ -108,3 +115,11 @@ class CognitoBackend(AbstractCognitoBackend):
             request.session['REFRESH_TOKEN'] = user.refresh_token
             request.session.save()
         return user
+# else:
+#     class CognitoBackend(AbstractCognitoBackend):
+#         def authenticate(self, username=None, password=None):
+#             """
+#             Authenticate a Cognito User
+#             """
+#             return super(CognitoBackend, self).authenticate(
+#                 username=username, password=password)
